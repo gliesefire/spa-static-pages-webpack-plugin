@@ -5,11 +5,11 @@ import {
 } from "./lib/generator";
 import { join } from "path";
 import { Compiler } from "webpack";
+import "@babel/register"
 
 const pluginName = "spa-static-pages";
 
 class SpaStaticPagesWebpackPlugin {
-  options: SpaStaticPagesWebpackPlugin;
   Generator: SpaStaticPages;
   static defaultOptions() {
     return new SpaStaticPagesOptions(
