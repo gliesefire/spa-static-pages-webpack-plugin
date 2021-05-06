@@ -154,7 +154,7 @@ class SpaStaticPages {
 
     this.modifyHtml(indexFile);
     this.minifyPages();
-    return this.pageList;
+    await this.copyRouteFilesToDestination();
   }
 }
 
