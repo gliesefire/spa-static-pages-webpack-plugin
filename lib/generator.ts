@@ -114,7 +114,7 @@ class SpaStaticPages {
     });
   }
 
-  async copyRouteFileToDestination() {
+  async copyRouteFilesToDestination() {
     for (let i = 1; i < this.pageList.length; ++i) {
       try {
         const result = await createFileP(
@@ -154,8 +154,9 @@ class SpaStaticPages {
 
     this.modifyHtml(indexFile);
     this.minifyPages();
-    await this.copyRouteFileToDestination();
+    // await this.copyRouteFilesToDestination();
+    return this.pageList;
   }
 }
 
-export { SpaStaticPages, SpaStaticPagesOptions, DocumentNode };
+export { SpaStaticPages, SpaStaticPagesOptions, DocumentNode, PageDetail };
