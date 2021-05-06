@@ -393,3 +393,6 @@ sw.*
 
 # Vim swap files
 *.swp
+
+#Distribution files
+dist
