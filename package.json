@@ -1,6 +1,6 @@
 {
   "name": "spa-static-pages-webpack-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generate the static html pages for spa applications to complement the HTML5 history mode",
   "main": "./dist/index.js",
   "scripts": {
