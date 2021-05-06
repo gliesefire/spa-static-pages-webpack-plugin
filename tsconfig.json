@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "allowJs": true,
+        "checkJs": false,
+        "moduleResolution": "node",
+        "outDir": "dist",
+        "sourceMap": true,
+    },
+    "exclude": [
+        "./dist/**/*" // This is what fixed it!
+    ]
+}
