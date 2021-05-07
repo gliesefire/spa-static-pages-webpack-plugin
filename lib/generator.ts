@@ -1,10 +1,10 @@
 import { load } from "cheerio";
 import { join, relative } from "path";
 
-import * as fs from "fs";
 import { minify } from "html-minifier";
 
-import { mkdirP, createFileP, isFileExists } from "./helpers";
+import * as fs from 'fs'
+import { isFileExists } from "./helpers";
 
 class PageDetail {
   route: string;
@@ -38,16 +38,26 @@ class SpaStaticPagesOptions {
   distDir: string;
   tagsToTransform: DocumentNode[];
   minify: boolean;
+  entryFileName: string;
   constructor(
     routes: string[],
     distDir: string,
     tagsToTransform: DocumentNode[],
-    minify: boolean
+    minify: boolean,
+    entryFileName: string = "index.html"
   ) {
     this.routes = routes;
     this.distDir = distDir;
     this.tagsToTransform = tagsToTransform;
     this.minify = minify;
+    this.entryFileName = entryFileName;
+  }
+}
+
+function removeElement(array: string[], elem: string) {
+  var index = array.indexOf(elem);
+  if (index > -1) {
+    array.splice(index, 1);
   }
 }
 
@@ -56,28 +66,33 @@ class SpaStaticPages {
   pageList: PageDetail[];
   constructor(options: SpaStaticPagesOptions) {
     this.options = options;
+    //TODO: Validation of options
+    removeElement(this.options.routes, "/");
+    //TODO: Check if '/' was the only route
   }
 
-  // Calculate outputPath & create it if it doesn't exist
+  // Calculate outputPath
   async setupDirectory() {
     this.pageList = new Array();
     for (let i = 0; i < this.options.routes.length; ++i) {
       const route = this.options.routes[i];
       const outputDir = join(this.options.distDir, route);
       try {
-        await mkdirP(outputDir, {
-          recursive: true,
-        });
+        const relativeFilePath = relative(this.options.distDir, join(outputDir, this.options.entryFileName));
+        this.pageList.push(
+          new PageDetail(
+            route,
+            outputDir,
+            null,
+            relativeFilePath
+          )
+        );
       } catch (err) {
         if (typeof err === "string") {
           throw `Unable to create directory ${outputDir} for route ${route}. \n ${err}`;
         }
         throw err;
       }
-
-      this.pageList.push(
-        new PageDetail(route, outputDir, null, join(outputDir, "index.html"))
-      );
     }
   }
 
@@ -85,10 +100,6 @@ class SpaStaticPages {
     const dataAsString = data.toString();
     const $ = load(dataAsString);
     this.pageList.forEach((page) => {
-      if (page.route === "/") {
-        page.html = dataAsString;
-        return;
-      }
       this.options.tagsToTransform.forEach((node) => {
         $(node.tagName).each((_index, element) => {
           node.attributeList.forEach((attribute) => {
@@ -114,47 +125,39 @@ class SpaStaticPages {
     });
   }
 
-  async copyRouteFilesToDestination() {
-    for (let i = 1; i < this.pageList.length; ++i) {
-      try {
-        const result = await createFileP(
-          this.pageList[i].outputPath,
-          this.pageList[i].html
-        );
-        if (result != this.pageList[i].outputPath) throw result;
-        console.log(
-          `Route static page ${this.pageList[i].route} generated successfully to ${this.pageList[i].outputPath}`
-        );
-      } catch (err) {
-        throw `Unable to write rendered route to file "${this.pageList[i].outputPath}" \n ${err}.`;
-      }
-    }
-  }
-
   minifyPages() {
     if (this.options.minify) {
       //Minify content if specified
+      console.log("Minification is enabled. Minifying it");
       this.pageList.forEach((page) => {
         page.html = minify(page.html);
       });
+      console.log("Minification complete for all pages");
     }
   }
 
-  async createPagesFor(indexFile: string | Buffer = null) {
+  async createPagesFor(entryFileSource: string | Buffer = null) {
     await this.setupDirectory();
 
-    if (!indexFile) {
-      const indexHtmlPath = join(this.options.distDir, "index.html");
+    if (!entryFileSource) {
+      const indexHtmlPath = join(
+        this.options.distDir,
+        this.options.entryFileName
+      );
       if (!isFileExists(indexHtmlPath))
-        throw `'No index.html found at ${this.options.distDir} directory.`;
+        throw `'No ${this.options.entryFileName} found at ${this.options.distDir} directory.`;
 
-      console.log(`Picking up index.html from ${this.options.distDir}`);
-      indexFile = fs.readFileSync(indexHtmlPath);
-    }
+      console.log(
+        `Picking up ${this.options.entryFileName} from ${this.options.distDir}`
+      );
+      const fileContents = fs.readFileSync(indexHtmlPath);
+      this.modifyHtml(fileContents);
+    } else this.modifyHtml(entryFileSource);
 
-    this.modifyHtml(indexFile);
     this.minifyPages();
-    await this.copyRouteFilesToDestination();
+    // await this.copyRouteFilesToDestination();
+    console.log(JSON.stringify(this.pageList));
+    return this.pageList;
   }
 }
 
